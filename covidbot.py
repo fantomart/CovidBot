@@ -3,7 +3,7 @@ import os
 
 import requests
 from telebot import TeleBot, types
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from bs4 import BeautifulSoup
 import secret
@@ -129,10 +129,37 @@ def handle_message(message):
             reply_markup=get_markup()
         )
     elif point == "беларусь":
+        start_date = datetime(2020, 3, 30)
+        data = requests.get("https://services.arcgis.com/5T5nSi527N4F7luB/arcgis/rest/services/EURO_COVID19_Running_v3_ALT_DS100/FeatureServer/0/query?f=json&where=(DaysSince100%3E%3D0)%20AND%20(WHO_CODE%3D%27BLR%27)&returnGeometry=false&spatialRel=esriSpatialRelIntersects&outFields=*&groupByFieldsForStatistics=DaysSince100%2CADM0_RUS&outStatistics=%5B%7B%22statisticType%22%3A%22sum%22%2C%22onStatisticField%22%3A%22TotalCases%22%2C%22outStatisticFieldName%22%3A%22value%22%7D%5D&resultType=standard&cacheHint=true")
+        if data.status_code != 200:
+            bot.send_message(
+                message.chat.id,
+                "Извините, какой-то сбой, не могу получить данные!",
+                parse_mode='html',
+                reply_markup=get_markup()
+            )
+            return
+        else:
+            data = data.json()
+
+
+        features = data.get("features", [])
+        to_last_day = features[-1].get("attributes", {}).get("DaysSince100", 0)
+        last_date = start_date + timedelta(days=to_last_day)
+
+        if last_date.date() == datetime.today().date():
+            header = f"<b> Данные на сегодня ({last_date.strftime('%d.%m.%Y')}) по Беларуси</b>:\n"
+        else:
+            header = f"<b>На сегодня данных еще нет!</b>\n " \
+                     f"Последние данные по Беларуси <b>на {last_date.strftime('%d.%m.%Y')}</b>:\n"
+        sick_today = features[-1].get("attributes", {}).get("value", 0)
+        diff_sick = sick_today - features[-2].get("attributes", {}).get("value", 0)
+
+        main_stats = f"<b>Заболевших</b>: {sick_today} (+{diff_sick})\n"
+
         bot.send_message(
             message.chat.id,
-            "Вот такая статистика в Беларуси\n"
-            "Посмотрите еще где-нибудь?",
+            header + main_stats,
             parse_mode='html',
             reply_markup=get_markup()
         )
