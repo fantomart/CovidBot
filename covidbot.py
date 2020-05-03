@@ -150,7 +150,7 @@ def handle_message(message):
         if last_date.date() == datetime.today().date():
             header = f"<b> Данные на сегодня ({last_date.strftime('%d.%m.%Y')}) по Беларуси</b>:\n"
         else:
-            header = f"<b>На сегодня данных еще нет!</b>\n " \
+            header = f"<b>На сегодня данных еще нет!</b>\n" \
                      f"Последние данные по Беларуси <b>на {last_date.strftime('%d.%m.%Y')}</b>:\n"
         sick_today = features[-1].get("attributes", {}).get("value", 0)
         diff_sick = sick_today - features[-2].get("attributes", {}).get("value", 0)
