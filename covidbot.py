@@ -15,7 +15,8 @@ POINTS = [
     'Беларусь'
 ]
 
-bot = TeleBot(secret.API_KEY)
+bot = TeleBot(os.environ.get("API_KEY"))
+# bot = TeleBot(secret.API_KEY)
 
 def get_point_buttons():
     return [types.KeyboardButton(point) for point in POINTS]
