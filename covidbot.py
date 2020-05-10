@@ -191,7 +191,7 @@ def handle_message(message):
 
     bot.send_message(
         message.chat.id,
-        "Не удалось найти указанный Вами регион/город\n"
+        "Не удалось найти указанный Вами регион/город.\n"
         "Попробуйте ввести столицу Вашего региона.",
         parse_mode='html',
         reply_markup=get_markup()
