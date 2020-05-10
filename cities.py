@@ -246,6 +246,9 @@ def region_name_and_code(key):
 
     result = get_key_and_value_ingnoring_register(CITIES_TEMPLATES, key)
     if result is not None:
+        for i_key, i_value in REGIONS_TEMPLATES.items():
+            if i_value == result[1]:
+                return [i_key, i_value]
         return result
 
     result = get_key_and_value_ingnoring_register(ADDITIONAL_REGION_TEMPLATES, key)
