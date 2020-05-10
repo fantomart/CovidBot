@@ -8,12 +8,14 @@ from datetime import datetime, timedelta
 
 from bs4 import BeautifulSoup
 import secret
+from cities import key_in_keys, region_name_and_code
 
 POINTS = [
     'Красноярск',
     'Россия',
     'Беларусь'
 ]
+
 
 bot = TeleBot(os.environ.get("API_KEY", secret.API_KEY))
 
@@ -52,7 +54,7 @@ def build_statistics_message(data, place):
         header = f"<b>Данные на сегодня ({last_date}) по {place}</b>:\n"
     else:
         header = f"<b>На сегодня данных еще нет!</b>\n" \
-                 f"Последние данные по {place} <b>на {last_date}</b>:\n"
+                 f"Последние данные по региону {place} <b>на {last_date}</b>:\n"
 
     main_stats = f"<b>Заболевших</b>: {values['sick']} (+{values['diff_sick']})\n" \
                  f"<b>Выздоровевших</b>: {values['healed']} (+{values['diff_healed']})\n" \
@@ -77,28 +79,7 @@ def start(message):
 def handle_message(message):
     point = message.text.strip().lower()
 
-    if point == "красноярск":
-        data = requests.get("https://xn--80aesfpebagmfblc0a.xn--p1ai/covid_data.json?do=region_stats&code=RU-KYA")
-        if data.status_code != 200:
-            bot.send_message(
-                message.chat.id,
-                "Извините, какой-то сбой, не могу получить данные!",
-                parse_mode='html',
-                reply_markup=get_markup()
-            )
-            return
-        else:
-            data = data.json()
-
-        message_text = build_statistics_message(data, "Красноярскому краю")
-
-        bot.send_message(
-            message.chat.id,
-            message_text,
-            parse_mode='html',
-            reply_markup=get_markup()
-        )
-    elif point == "россия":
+    if point == "россия":
         data = requests.get("https://xn--80aesfpebagmfblc0a.xn--p1ai/information/")
         if data.status_code != 200:
             bot.send_message(
@@ -129,6 +110,7 @@ def handle_message(message):
             parse_mode='html',
             reply_markup=get_markup()
         )
+        return
     elif point == "беларусь":
         date = datetime.today()
         link = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv"
@@ -178,14 +160,42 @@ def handle_message(message):
             parse_mode='html',
             reply_markup=get_markup()
         )
-    else:
-        bot.send_message(
-            message.chat.id,
-            "Это что за деревня? Я такой не знаю\n"
-            "Посмотрите еще где-нибудь?",
-            parse_mode='html',
-            reply_markup=get_markup()
-        )
+        return
+    elif key_in_keys(point):
+        result = region_name_and_code(point)
+        if result is not None:
+            data = requests.get(
+                f"https://xn--80aesfpebagmfblc0a.xn--p1ai/"
+                f"covid_data.json?do=region_stats&code=RU-{result[1]}"
+            )
+            if data.status_code != 200:
+                bot.send_message(
+                    message.chat.id,
+                    "Извините, какой-то сбой, не могу получить данные!",
+                    parse_mode='html',
+                    reply_markup=get_markup()
+                )
+                return
+            else:
+                data = data.json()
+
+            message_text = build_statistics_message(data, result[0])
+
+            bot.send_message(
+                message.chat.id,
+                message_text,
+                parse_mode='html',
+                reply_markup=get_markup()
+            )
+            return
+
+    bot.send_message(
+        message.chat.id,
+        "Не удалось найти указанный Вами регион/город\n"
+        "Попробуйте ввести столицу Вашего региона.",
+        parse_mode='html',
+        reply_markup=get_markup()
+    )
 
 
 bot.polling(none_stop=True)
