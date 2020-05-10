@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import pandas
 import requests
@@ -51,10 +52,12 @@ def build_statistics_message(data, place):
     last_date = today_data.get('date')
     values = get_stats_values(today_data, yesterday_data)
     if datetime.strptime(last_date, '%d.%m.%Y').date() == datetime.today().date():
-        header = f"<b>Данные на сегодня ({last_date}) по региону {place}</b>:\n"
+        header = f"<b>Данные на сегодня ({last_date}) по" \
+                 f"{'' if place in ['Беларуси', 'России'] else ' региону'} {place}</b>:\n"
     else:
         header = f"<b>На сегодня данных еще нет!</b>\n" \
-                 f"Последние данные по {place} <b>на {last_date}</b>:\n"
+                 f"Последние данные по{'' if place in ['Беларуси', 'России'] else ' региону'} " \
+                 f"{place} <b>на {last_date}</b>:\n"
 
     main_stats = f"<b>Заболевших</b>: {values['sick']} (+{values['diff_sick']})\n" \
                  f"<b>Выздоровевших</b>: {values['healed']} (+{values['diff_healed']})\n" \
@@ -111,47 +114,133 @@ def handle_message(message):
             reply_markup=get_markup()
         )
         return
+    # elif point == "беларусь":
+    #     date = datetime.today()
+    #     link = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv"
+    #
+    #     data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
+    #     if data.status_code != 200:
+    #         if data.status_code == 404:
+    #             date = datetime.today() - timedelta(days=1)
+    #             data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
+    #             if data.status_code != 200:
+    #                 bot.send_message(
+    #                     message.chat.id,
+    #                     "Извините, какой-то сбой, не могу получить данные!",
+    #                     parse_mode='html',
+    #                     reply_markup=get_markup()
+    #                 )
+    #                 return
+    #
+    #     database = pandas.read_csv(link.format(date=date.strftime('%m-%d-%Y')), index_col='Country_Region')
+    #     sick = database["Confirmed"]["Belarus"]
+    #     healed = database["Recovered"]["Belarus"]
+    #     died = database["Deaths"]["Belarus"]
+    #     result = [{
+    #         "sick":sick,
+    #         "healed": healed,
+    #         "died": died,
+    #         "date": date.strftime("%d.%m.%Y")
+    #     }]
+    #
+    #     database_yesterday = pandas.read_csv(
+    #         link.format(date=(date - timedelta(days=1)).strftime('%m-%d-%Y')),
+    #         index_col='Country_Region'
+    #     )
+    #     result.append(
+    #         {
+    #             "sick": database_yesterday["Confirmed"]["Belarus"],
+    #             "healed": database_yesterday["Recovered"]["Belarus"],
+    #             "died": database_yesterday["Deaths"]["Belarus"],
+    #             "date": (date - timedelta(days=1)).strftime('%d.%m.%Y')
+    #         }
+    #     )
+    #     message_text = build_statistics_message(result, "Беларуси")
+    #
+    #     bot.send_message(
+    #         message.chat.id,
+    #         message_text,
+    #         parse_mode='html',
+    #         reply_markup=get_markup()
+    #     )
+    #     return
     elif point == "беларусь":
-        date = datetime.today()
-        link = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv"
+        today = datetime.today()
+        yesterday = today - timedelta(days=1)
+        pre_yesterday = today - timedelta(days=2)
+        today_find_date = today.strftime("%d %B")
+        yesterday_find_date = yesterday.strftime("%d %B")
+        pre_yesterday_find_date = pre_yesterday.strftime("%d %B")
+        if today_find_date[0] == "0":
+            today_find_date = today_find_date[1:]
+        if yesterday_find_date[0] == "0":
+            yesterday_find_date = yesterday_find_date[1:]
+        if pre_yesterday_find_date[0] == "0":
+            pre_yesterday_find_date = pre_yesterday_find_date[1:]
 
-        data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
+        link = "https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Belarus"
+
+        data = requests.get(link)
         if data.status_code != 200:
-            if data.status_code == 404:
-                date = datetime.today() - timedelta(days=1)
-                data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
-                if data.status_code != 200:
-                    bot.send_message(
-                        message.chat.id,
-                        "Извините, какой-то сбой, не могу получить данные!",
-                        parse_mode='html',
-                        reply_markup=get_markup()
-                    )
-                    return
+            bot.send_message(
+                message.chat.id,
+                "Извините, какой-то сбой, не могу получить данные!",
+                parse_mode='html',
+                reply_markup=get_markup()
+            )
+            return
 
-        database = pandas.read_csv(link.format(date=date.strftime('%m-%d-%Y')), index_col='Country_Region')
-        sick = database["Confirmed"]["Belarus"]
-        healed = database["Recovered"]["Belarus"]
-        died = database["Deaths"]["Belarus"]
-        result = [{
-            "sick":sick,
-            "healed": healed,
-            "died": died,
-            "date": date.strftime("%d.%m.%Y")
-        }]
+        soup = BeautifulSoup(data.text, 'lxml')
+        result = soup.select("p > b")
+        today_data = {}
+        yesterday_data = {}
+        pre_yesterday_data = {}
+        for item in reversed(result):
+            confirmed = ""
+            recoveries = ""
+            deaths = ""
+            if item.text == today_find_date:
+                info = item.parent.contents[2]
+                confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
+                recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
+                deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
+                today_data = {
+                    "date": datetime.today().strftime('%d.%m.%Y'),
+                    "sick": int(confirmed),
+                    "healed": int(recoveries),
+                    "died": int(deaths)
+                }
+            if item.text == yesterday_find_date:
+                info = item.parent.contents[2]
+                confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
+                recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
+                deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
+                yesterday_data = {
+                    "date": (datetime.today() - timedelta(days=1)).strftime('%d.%m.%Y'),
+                    "sick": int(confirmed),
+                    "healed": int(recoveries),
+                    "died": int(deaths)
+                }
+            if item.text == pre_yesterday_find_date:
+                info = item.parent.contents[2]
+                confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
+                recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
+                deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
+                pre_yesterday_data = {
+                    "date": (datetime.today() - timedelta(days=2)).strftime('%d.%m.%Y'),
+                    "sick": int(confirmed),
+                    "healed": int(recoveries),
+                    "died": int(deaths)
+                }
 
-        database_yesterday = pandas.read_csv(
-            link.format(date=(date - timedelta(days=1)).strftime('%m-%d-%Y')),
-            index_col='Country_Region'
-        )
-        result.append(
-            {
-                "sick": database_yesterday["Confirmed"]["Belarus"],
-                "healed": database_yesterday["Recovered"]["Belarus"],
-                "died": database_yesterday["Deaths"]["Belarus"],
-                "date": (date - timedelta(days=1)).strftime('%d.%m.%Y')
-            }
-        )
+        result = []
+        if today_data:
+            result.append(today_data)
+        if yesterday_data:
+            result.append(yesterday_data)
+        if pre_yesterday_data:
+            result.append(pre_yesterday_data)
+
         message_text = build_statistics_message(result, "Беларуси")
 
         bot.send_message(
