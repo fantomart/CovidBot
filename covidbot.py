@@ -51,10 +51,10 @@ def build_statistics_message(data, place):
     last_date = today_data.get('date')
     values = get_stats_values(today_data, yesterday_data)
     if datetime.strptime(last_date, '%d.%m.%Y').date() == datetime.today().date():
-        header = f"<b>Данные на сегодня ({last_date}) по {place}</b>:\n"
+        header = f"<b>Данные на сегодня ({last_date}) по региону {place}</b>:\n"
     else:
         header = f"<b>На сегодня данных еще нет!</b>\n" \
-                 f"Последние данные по региону {place} <b>на {last_date}</b>:\n"
+                 f"Последние данные по {place} <b>на {last_date}</b>:\n"
 
     main_stats = f"<b>Заболевших</b>: {values['sick']} (+{values['diff_sick']})\n" \
                  f"<b>Выздоровевших</b>: {values['healed']} (+{values['diff_healed']})\n" \
