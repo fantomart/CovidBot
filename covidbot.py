@@ -17,17 +17,19 @@ POINTS = [
     'Беларусь'
 ]
 
-
 bot = TeleBot(os.environ.get("API_KEY", secret.API_KEY))
+
 
 def get_point_buttons():
     return [types.KeyboardButton(point) for point in POINTS]
+
 
 def get_markup():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
     markup.add(*get_point_buttons())
 
     return markup
+
 
 def get_stats_values(first_day, second_day):
     sick = first_day.get('sick')
@@ -45,6 +47,7 @@ def get_stats_values(first_day, second_day):
         "died": died,
         "diff_died": diff_died
     }
+
 
 def build_statistics_message(data, place):
     today_data = data[0]
@@ -65,6 +68,7 @@ def build_statistics_message(data, place):
 
     return header + main_stats
 
+
 @bot.message_handler(commands=['start'])
 def start(message):
     user = message.from_user
@@ -77,6 +81,7 @@ def start(message):
         parse_mode='html',
         reply_markup=get_markup()
     )
+
 
 @bot.message_handler(content_types=['text'])
 def handle_message(message):
@@ -114,56 +119,6 @@ def handle_message(message):
             reply_markup=get_markup()
         )
         return
-    # elif point == "беларусь":
-    #     date = datetime.today()
-    #     link = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv"
-    #
-    #     data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
-    #     if data.status_code != 200:
-    #         if data.status_code == 404:
-    #             date = datetime.today() - timedelta(days=1)
-    #             data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
-    #             if data.status_code != 200:
-    #                 bot.send_message(
-    #                     message.chat.id,
-    #                     "Извините, какой-то сбой, не могу получить данные!",
-    #                     parse_mode='html',
-    #                     reply_markup=get_markup()
-    #                 )
-    #                 return
-    #
-    #     database = pandas.read_csv(link.format(date=date.strftime('%m-%d-%Y')), index_col='Country_Region')
-    #     sick = database["Confirmed"]["Belarus"]
-    #     healed = database["Recovered"]["Belarus"]
-    #     died = database["Deaths"]["Belarus"]
-    #     result = [{
-    #         "sick":sick,
-    #         "healed": healed,
-    #         "died": died,
-    #         "date": date.strftime("%d.%m.%Y")
-    #     }]
-    #
-    #     database_yesterday = pandas.read_csv(
-    #         link.format(date=(date - timedelta(days=1)).strftime('%m-%d-%Y')),
-    #         index_col='Country_Region'
-    #     )
-    #     result.append(
-    #         {
-    #             "sick": database_yesterday["Confirmed"]["Belarus"],
-    #             "healed": database_yesterday["Recovered"]["Belarus"],
-    #             "died": database_yesterday["Deaths"]["Belarus"],
-    #             "date": (date - timedelta(days=1)).strftime('%d.%m.%Y')
-    #         }
-    #     )
-    #     message_text = build_statistics_message(result, "Беларуси")
-    #
-    #     bot.send_message(
-    #         message.chat.id,
-    #         message_text,
-    #         parse_mode='html',
-    #         reply_markup=get_markup()
-    #     )
-    #     return
     elif point == "беларусь":
         today = datetime.today()
         yesterday = today - timedelta(days=1)
@@ -205,7 +160,7 @@ def handle_message(message):
                 recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
                 deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
                 today_data = {
-                    "date": datetime.today().strftime('%d.%m.%Y'),
+                    "date": today.strftime('%d.%m.%Y'),
                     "sick": int(confirmed),
                     "healed": int(recoveries),
                     "died": int(deaths)
@@ -216,7 +171,7 @@ def handle_message(message):
                 recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
                 deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
                 yesterday_data = {
-                    "date": (datetime.today() - timedelta(days=1)).strftime('%d.%m.%Y'),
+                    "date": yesterday.strftime('%d.%m.%Y'),
                     "sick": int(confirmed),
                     "healed": int(recoveries),
                     "died": int(deaths)
@@ -227,7 +182,7 @@ def handle_message(message):
                 recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
                 deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
                 pre_yesterday_data = {
-                    "date": (datetime.today() - timedelta(days=2)).strftime('%d.%m.%Y'),
+                    "date": pre_yesterday.strftime('%d.%m.%Y'),
                     "sick": int(confirmed),
                     "healed": int(recoveries),
                     "died": int(deaths)
