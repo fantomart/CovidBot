@@ -119,6 +119,56 @@ def handle_message(message):
             reply_markup=get_markup()
         )
         return
+    # elif point == "беларусь":
+    #     date = datetime.today()
+    #     link = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv"
+    #
+    #     data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
+    #     if data.status_code != 200:
+    #         if data.status_code == 404:
+    #             date = datetime.today() - timedelta(days=1)
+    #             data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
+    #             if data.status_code != 200:
+    #                 bot.send_message(
+    #                     message.chat.id,
+    #                     "Извините, какой-то сбой, не могу получить данные!",
+    #                     parse_mode='html',
+    #                     reply_markup=get_markup()
+    #                 )
+    #                 return
+    #
+    #     database = pandas.read_csv(link.format(date=date.strftime('%m-%d-%Y')), index_col='Country_Region')
+    #     sick = database["Confirmed"]["Belarus"]
+    #     healed = database["Recovered"]["Belarus"]
+    #     died = database["Deaths"]["Belarus"]
+    #     result = [{
+    #         "sick":sick,
+    #         "healed": healed,
+    #         "died": died,
+    #         "date": date.strftime("%d.%m.%Y")
+    #     }]
+    #
+    #     database_yesterday = pandas.read_csv(
+    #         link.format(date=(date - timedelta(days=1)).strftime('%m-%d-%Y')),
+    #         index_col='Country_Region'
+    #     )
+    #     result.append(
+    #         {
+    #             "sick": database_yesterday["Confirmed"]["Belarus"],
+    #             "healed": database_yesterday["Recovered"]["Belarus"],
+    #             "died": database_yesterday["Deaths"]["Belarus"],
+    #             "date": (date - timedelta(days=1)).strftime('%d.%m.%Y')
+    #         }
+    #     )
+    #     message_text = build_statistics_message(result, "Беларуси")
+    #
+    #     bot.send_message(
+    #         message.chat.id,
+    #         message_text,
+    #         parse_mode='html',
+    #         reply_markup=get_markup()
+    #     )
+    #     return
     elif point == "беларусь":
         today = datetime.today()
         yesterday = today - timedelta(days=1)
