@@ -196,7 +196,7 @@ def handle_message(message):
             return
 
         soup = BeautifulSoup(data.text, 'lxml')
-        result = soup.select("p > b")
+        result = soup.select("p > b, td > b")
         today_data = {}
         yesterday_data = {}
         pre_yesterday_data = {}
