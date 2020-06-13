@@ -204,7 +204,7 @@ def handle_message(message):
             confirmed = ""
             recoveries = ""
             deaths = ""
-            if item.text == today_find_date:
+            if item.text.strip() == today_find_date:
                 info = item.parent.contents[2]
                 confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
                 recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
@@ -215,7 +215,7 @@ def handle_message(message):
                     "healed": int(recoveries),
                     "died": int(deaths)
                 }
-            if item.text == yesterday_find_date:
+            if item.text.strip() == yesterday_find_date:
                 info = item.parent.contents[2]
                 confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
                 recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
@@ -226,7 +226,7 @@ def handle_message(message):
                     "healed": int(recoveries),
                     "died": int(deaths)
                 }
-            if item.text == pre_yesterday_find_date:
+            if item.text.strip() == pre_yesterday_find_date:
                 info = item.parent.contents[2]
                 confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
                 recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
