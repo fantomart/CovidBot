@@ -222,50 +222,77 @@ ADDITIONAL_CITY_TEMPLATES = {
     "Южно Сахалинск": "SAK",
 }
 
+
+class Point:
+    def __init__(self, region, code):
+        self.region = region
+        self.code = code
+
+
 def get_all_keys():
-    all_keys = list(REGIONS_TEMPLATES.keys()) \
-               + list(ADDITIONAL_REGION_TEMPLATES.keys()) \
-               + list(CITIES_TEMPLATES.keys()) \
-               + list(ADDITIONAL_CITY_TEMPLATES.keys())
-    all_keys_lower = [key.lower() for key in all_keys]
-    return all_keys_lower
+    all_keys = [
+        *REGIONS_TEMPLATES.keys(),
+        *ADDITIONAL_REGION_TEMPLATES.keys(),
+        *CITIES_TEMPLATES.keys(),
+        *ADDITIONAL_CITY_TEMPLATES.keys()
+    ]
+    return [key.lower() for key in all_keys]
+
 
 def key_in_keys(key):
     return key.lower() in get_all_keys()
 
-def get_key_and_value_ingnoring_register(template_dict, city):
+
+def get_key_and_value_ignoring_register(template_dict, city):
     for key in template_dict.keys():
         if city.lower() == key.lower():
-            return [key, template_dict.get(key)]
+            return Point(key, template_dict.get(key))
     return None
 
+
 def region_name_and_code(key):
-    result = get_key_and_value_ingnoring_register(REGIONS_TEMPLATES, key)
+    reversed_regions_template = dict(
+        zip(REGIONS_TEMPLATES.values(), REGIONS_TEMPLATES.keys())
+    )
+    # Корректное название региона
+    result = get_key_and_value_ignoring_register(REGIONS_TEMPLATES, key)
     if result is not None:
         return result
 
-    result = get_key_and_value_ingnoring_register(CITIES_TEMPLATES, key)
+    # Корректное названию города
+    result = get_key_and_value_ignoring_register(CITIES_TEMPLATES, key)
     if result is not None:
-        for i_key, i_value in REGIONS_TEMPLATES.items():
-            if i_value == result[1]:
-                return [i_key, i_value]
+        # Проверяем совпадение кода с кодом региона
+        # Если совпадает, значит это статистика по региону, а не по городу
+        region_name = reversed_regions_template.get(result.code)
+        if region_name:
+            result.region = region_name
         return result
 
-    result = get_key_and_value_ingnoring_register(ADDITIONAL_REGION_TEMPLATES, key)
+    # Некорректное название региона
+    result = get_key_and_value_ignoring_register(ADDITIONAL_REGION_TEMPLATES, key)
     if result is not None:
-        for i_key, i_value in ADDITIONAL_REGION_TEMPLATES.items():
-            if i_value == result[1]:
-                return [i_key, i_value]
+        # Ищем корректное название региона
+        region_name = reversed_regions_template.get(result.code)
+        if region_name:
+            result.region = region_name
         return result
 
-    result = get_key_and_value_ingnoring_register(ADDITIONAL_CITY_TEMPLATES, key)
+    # Некорректное название города
+    result = get_key_and_value_ignoring_register(ADDITIONAL_CITY_TEMPLATES, key)
     if result is not None:
-        for i_key, i_value in ADDITIONAL_REGION_TEMPLATES.items():
-            if i_value == result[1]:
-                return [i_key, i_value]
-        for i_key, i_value in ADDITIONAL_CITY_TEMPLATES.items():
-            if i_value == result[1]:
-                return [i_key, i_value]
+        # Ищем корректное название региона
+        region_name = reversed_regions_template.get(result.code)
+        if region_name:
+            result.region = region_name
+        else:
+            # Ищем корректное название города
+            reversed_cities_template = dict(
+                zip(CITIES_TEMPLATES.values(), CITIES_TEMPLATES.keys())
+            )
+            region_name = reversed_cities_template.get(result.code)
+            if region_name:
+                result.region = region_name
         return result
 
     return None

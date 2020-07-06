@@ -5,7 +5,7 @@ import re
 import pandas
 import requests
 from telebot import TeleBot, types
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 import secret
@@ -86,7 +86,7 @@ def start(message):
 @bot.message_handler(content_types=['text'])
 def handle_message(message):
     point = message.text.strip().lower()
-
+    message_text = ""
     if point == "россия":
         data = requests.get("https://xn--80aesfpebagmfblc0a.xn--p1ai/information/")
         if data.status_code != 200:
@@ -105,20 +105,7 @@ def handle_message(message):
             if charts_data:
                 charts_data_json = json.loads(charts_data)
                 message_text = build_statistics_message(charts_data_json, "России")
-                bot.send_message(
-                    message.chat.id,
-                    message_text,
-                    parse_mode='html',
-                    reply_markup=get_markup()
-                )
-                return
-        bot.send_message(
-            message.chat.id,
-            "Извините, какой-то сбой, не могу получить данные!",
-            parse_mode='html',
-            reply_markup=get_markup()
-        )
-        return
+
     # elif point == "беларусь":
     #     date = datetime.today()
     #     link = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv"
@@ -170,19 +157,6 @@ def handle_message(message):
     #     )
     #     return
     elif point == "беларусь":
-        today = datetime.today()
-        yesterday = today - timedelta(days=1)
-        pre_yesterday = today - timedelta(days=2)
-        today_find_date = today.strftime("%d %B")
-        yesterday_find_date = yesterday.strftime("%d %B")
-        pre_yesterday_find_date = pre_yesterday.strftime("%d %B")
-        if today_find_date[0] == "0":
-            today_find_date = today_find_date[1:]
-        if yesterday_find_date[0] == "0":
-            yesterday_find_date = yesterday_find_date[1:]
-        if pre_yesterday_find_date[0] == "0":
-            pre_yesterday_find_date = pre_yesterday_find_date[1:]
-
         link = "https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Belarus"
 
         data = requests.get(link)
@@ -197,70 +171,28 @@ def handle_message(message):
 
         soup = BeautifulSoup(data.text, 'lxml')
         result = soup.select("p > b, td > b")
-        today_data = {}
-        yesterday_data = {}
-        pre_yesterday_data = {}
-        for item in reversed(result):
-            confirmed = ""
-            recoveries = ""
-            deaths = ""
-            if item.text.strip() == today_find_date:
-                info = item.parent.contents[2]
-                confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
-                recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
-                deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
-                today_data = {
-                    "date": today.strftime('%d.%m.%Y'),
+
+        result_data = []
+        for item in list(reversed(result))[:3]:
+            info = item.parent.contents[2]
+            confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
+            recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
+            deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
+            result_data.append(
+                {
+                    "date": datetime.strptime(f"{item.text.strip()} 2020", "%d %B %Y").strftime('%d.%m.%Y'),
                     "sick": int(confirmed),
                     "healed": int(recoveries),
                     "died": int(deaths)
                 }
-            if item.text.strip() == yesterday_find_date:
-                info = item.parent.contents[2]
-                confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
-                recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
-                deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
-                yesterday_data = {
-                    "date": yesterday.strftime('%d.%m.%Y'),
-                    "sick": int(confirmed),
-                    "healed": int(recoveries),
-                    "died": int(deaths)
-                }
-            if item.text.strip() == pre_yesterday_find_date:
-                info = item.parent.contents[2]
-                confirmed = re.findall("([0-9]+[,[0-9]+)?( confirmed cases)", info)[0][0].replace(",", "")
-                recoveries = re.findall("([0-9]+[,[0-9]+)?( recoveries)", info)[0][0].replace(",", "")
-                deaths = re.findall("([0-9]+[,[0-9]+)?( deaths)", info)[0][0].replace(",", "")
-                pre_yesterday_data = {
-                    "date": pre_yesterday.strftime('%d.%m.%Y'),
-                    "sick": int(confirmed),
-                    "healed": int(recoveries),
-                    "died": int(deaths)
-                }
-
-        result = []
-        if today_data:
-            result.append(today_data)
-        if yesterday_data:
-            result.append(yesterday_data)
-        if pre_yesterday_data:
-            result.append(pre_yesterday_data)
-
-        message_text = build_statistics_message(result, "Беларуси")
-
-        bot.send_message(
-            message.chat.id,
-            message_text,
-            parse_mode='html',
-            reply_markup=get_markup()
-        )
-        return
+            )
+        message_text = build_statistics_message(result_data, "Беларуси")
     elif key_in_keys(point):
         result = region_name_and_code(point)
         if result is not None:
             data = requests.get(
                 f"https://xn--80aesfpebagmfblc0a.xn--p1ai/"
-                f"covid_data.json?do=region_stats&code=RU-{result[1]}"
+                f"covid_data.json?do=region_stats&code=RU-{result.code}"
             )
             if data.status_code != 200:
                 bot.send_message(
@@ -273,23 +205,23 @@ def handle_message(message):
             else:
                 data = data.json()
 
-            message_text = build_statistics_message(data, result[0])
+            message_text = build_statistics_message(data, result.region)
 
-            bot.send_message(
-                message.chat.id,
-                message_text,
-                parse_mode='html',
-                reply_markup=get_markup()
-            )
-            return
-
-    bot.send_message(
-        message.chat.id,
-        "Не удалось найти указанный Вами регион/город.\n"
-        "Попробуйте ввести столицу Вашего региона.",
-        parse_mode='html',
-        reply_markup=get_markup()
-    )
+    if message_text:
+        bot.send_message(
+            message.chat.id,
+            message_text,
+            parse_mode='html',
+            reply_markup=get_markup()
+        )
+    else:
+        bot.send_message(
+            message.chat.id,
+            "Не удалось найти указанный Вами регион/город.\n"
+            "Попробуйте ввести столицу Вашего региона.",
+            parse_mode='html',
+            reply_markup=get_markup()
+        )
 
 
 bot.polling(none_stop=True)
