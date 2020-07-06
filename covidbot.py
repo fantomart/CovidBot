@@ -2,7 +2,6 @@ import json
 import os
 import re
 
-import pandas
 import requests
 from telebot import TeleBot, types
 from datetime import datetime
@@ -32,12 +31,12 @@ def get_markup():
 
 
 def get_stats_values(first_day, second_day):
-    sick = first_day.get('sick')
-    diff_sick = int(first_day.get('sick')) - int(second_day.get('sick'))
-    healed = first_day.get('healed')
-    diff_healed = int(first_day.get('healed')) - int(second_day.get('healed'))
-    died = first_day.get('died')
-    diff_died = int(first_day.get('died')) - int(second_day.get('died'))
+    sick = int(first_day.get('sick'), 0)
+    diff_sick = sick - int(second_day.get('sick', 0))
+    healed = int(first_day.get('healed', 0))
+    diff_healed = healed - int(second_day.get('healed', 0))
+    died = int(first_day.get('died', 0))
+    diff_died = died - int(second_day.get('died', 0))
 
     return {
         "sick": sick,
@@ -106,56 +105,6 @@ def handle_message(message):
                 charts_data_json = json.loads(charts_data)
                 message_text = build_statistics_message(charts_data_json, "России")
 
-    # elif point == "беларусь":
-    #     date = datetime.today()
-    #     link = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv"
-    #
-    #     data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
-    #     if data.status_code != 200:
-    #         if data.status_code == 404:
-    #             date = datetime.today() - timedelta(days=1)
-    #             data = requests.get(link.format(date=date.strftime('%m-%d-%Y')))
-    #             if data.status_code != 200:
-    #                 bot.send_message(
-    #                     message.chat.id,
-    #                     "Извините, какой-то сбой, не могу получить данные!",
-    #                     parse_mode='html',
-    #                     reply_markup=get_markup()
-    #                 )
-    #                 return
-    #
-    #     database = pandas.read_csv(link.format(date=date.strftime('%m-%d-%Y')), index_col='Country_Region')
-    #     sick = database["Confirmed"]["Belarus"]
-    #     healed = database["Recovered"]["Belarus"]
-    #     died = database["Deaths"]["Belarus"]
-    #     result = [{
-    #         "sick":sick,
-    #         "healed": healed,
-    #         "died": died,
-    #         "date": date.strftime("%d.%m.%Y")
-    #     }]
-    #
-    #     database_yesterday = pandas.read_csv(
-    #         link.format(date=(date - timedelta(days=1)).strftime('%m-%d-%Y')),
-    #         index_col='Country_Region'
-    #     )
-    #     result.append(
-    #         {
-    #             "sick": database_yesterday["Confirmed"]["Belarus"],
-    #             "healed": database_yesterday["Recovered"]["Belarus"],
-    #             "died": database_yesterday["Deaths"]["Belarus"],
-    #             "date": (date - timedelta(days=1)).strftime('%d.%m.%Y')
-    #         }
-    #     )
-    #     message_text = build_statistics_message(result, "Беларуси")
-    #
-    #     bot.send_message(
-    #         message.chat.id,
-    #         message_text,
-    #         parse_mode='html',
-    #         reply_markup=get_markup()
-    #     )
-    #     return
     elif point == "беларусь":
         link = "https://en.wikipedia.org/wiki/COVID-19_pandemic_in_Belarus"
 
