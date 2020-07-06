@@ -31,7 +31,7 @@ def get_markup():
 
 
 def get_stats_values(first_day, second_day):
-    sick = int(first_day.get('sick'), 0)
+    sick = int(first_day.get('sick', 0))
     diff_sick = sick - int(second_day.get('sick', 0))
     healed = int(first_day.get('healed', 0))
     diff_healed = healed - int(second_day.get('healed', 0))
