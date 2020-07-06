@@ -7,7 +7,6 @@ from telebot import TeleBot, types
 from datetime import datetime
 
 from bs4 import BeautifulSoup
-import secret
 from cities import key_in_keys, region_name_and_code
 
 POINTS = [
@@ -16,7 +15,7 @@ POINTS = [
     'Беларусь'
 ]
 
-bot = TeleBot(os.environ.get("API_KEY", secret.API_KEY))
+bot = TeleBot(os.environ.get("API_KEY"))
 
 
 def get_point_buttons():
